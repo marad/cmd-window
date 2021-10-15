@@ -3,7 +3,13 @@
 > Never spend 6 minutes doing something by hand when you can spend 6 hours failing to automate it - [Zhuowej Zhang](https://twitter.com/zhuowei/status/1254266079532154880)
 
 ## What is this about?
-This tool will make you a computer ninja. It can automate everything you do on your PC. You can:
+This tool will make you a computer ninja. Its main goal is to integrate few well known tools like [AutoHotkey](https://www.autohotkey.com/),
+[Selenium](https://www.selenium.dev/) and Kotlin libraries into one interface which you *quickly* orchestrate with Kotlin scripts.
+
+It aims to minimise the time for development feedback of your scripts mainly by hot-reloading changes in a running 
+environment rather than restarting the application all the time.
+
+It can automate everything you do on your PC. You can:
 
 - launch any program
 - open any predefined folder
