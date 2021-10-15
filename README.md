@@ -7,7 +7,7 @@ This tool will make you a computer ninja. It can automate everything you do on y
 
 - launch any program
 - open any predefined folder
-- automate mouse and keyboard input (and much more) with [AutoHotkey](https://www.autohotkey.com/)
+- automate mouse and keyboard input (and much more) with [AutoHotkey](https://www.autohotkey.com/) integration
 - automate browser with [Selenium](https://www.selenium.dev/)
 
 You have to be a bit of a ninja already since you have to know something about Kotlin to use it. Not much but still... 
@@ -84,5 +84,7 @@ cmd-window to be installed on your disk. You can place it wherever you want.
 - [This](https://xkcd.com/1205/) will help you judge if something is worth automating at all ;)
 
 ## I'd like to help!
-Great! If you spot some bugs or have an idea just post an [issue](https://github.com/marad/cmd-window/issues/new) 
+Great! If you spot some bugs or have an idea or even need some help setting this stuff up just post an [issue](https://github.com/marad/cmd-window/issues/new).
 You can also submit a [pull request](https://github.com/marad/cmd-window/compare).
+
+I appreciate any help here because this would mean that this is also useful to you!
