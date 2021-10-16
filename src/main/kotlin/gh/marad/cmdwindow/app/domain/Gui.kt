@@ -20,6 +20,7 @@ import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.NativeKeyEvent
 import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.input.key.type
+import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.*
 import gh.marad.cmdwindow.app.data.CommandName
@@ -27,18 +28,18 @@ import gh.marad.cmdwindow.app.data.CommandName
 
 object Gui {
     const val mainWindowTitle = "Command Window"
-    private val promptWindowSize = WindowSize(400.dp, 100.dp)
-    private lateinit var closeAppCallback: () -> Unit
+    private val promptWindowSize = DpSize(400.dp, 100.dp)
 
     // main window
     private val promptWindowOpen = mutableStateOf(false)
+    private lateinit var trayState: TrayState
 
     fun toggleMainWindow() { promptWindowOpen.value = !promptWindowOpen.value }
-    fun exitApplication() = closeAppCallback()
+
+    fun sendNotification(notification: Notification) = trayState.sendNotification(notification)
 
     fun start(invokeCommand: (CommandName) -> Unit) = application {
-        closeAppCallback = ::exitApplication
-        TrayIcon.setup()
+        setupTrayIcon()
         definePromptWindow(invokeCommand)
     }
 
@@ -81,7 +82,7 @@ object Gui {
             onCloseRequest = ::exitApplication,
             icon = AppIcon,
             title = title,
-            state = rememberWindowState(size = WindowSize(width.dp, height.dp), position = WindowPosition.Aligned(Alignment.Center))
+            state = rememberWindowState(size = DpSize(width.dp, height.dp), position = WindowPosition.Aligned(Alignment.Center))
         ) {
             layout { Text(message) }
         }
@@ -125,7 +126,7 @@ object Gui {
                 title = title ?: "",
                 undecorated = false,
                 state = rememberWindowState(
-                    size = WindowSize(promptWindowSize.width, 650.dp),
+                    size = DpSize(promptWindowSize.width, 650.dp),
                     position = WindowPosition.Aligned(Alignment.Center)
                 ),
             ) {
@@ -278,7 +279,7 @@ object Gui {
             try {
                 handler()
             } catch(ex: Throwable) {
-                TrayIcon.trayState.sendNotification(
+                trayState.sendNotification(
                     Notification(
                         "Exception",
                         "${ex.message}",
@@ -327,26 +328,23 @@ object Gui {
         }
     }
 
-    object TrayIcon {
-        lateinit var trayState: TrayState
-        @Composable
-        fun setup() {
-            trayState = rememberTrayState()
-            Tray(
-                state = trayState,
-                icon = AppIcon,
-                menu = {
-                    Item(
-                        "Toggle window",
-                        onClick = { toggleMainWindow() }
-                    )
-                    Item(
-                        "Close",
-                        onClick = { exitApplication() }
-                    )
-                }
-            )
-        }
+    @Composable
+    fun ApplicationScope.setupTrayIcon() {
+        trayState = rememberTrayState()
+        Tray(
+            state = trayState,
+            icon = AppIcon,
+            menu = {
+                Item(
+                    "Toggle window",
+                    onClick = { toggleMainWindow() }
+                )
+                Item(
+                    "Close",
+                    onClick = { exitApplication() }
+                )
+            }
+        )
     }
 }
 
