@@ -30,7 +30,6 @@ dependencies {
     implementation("clj-http:clj-http:3.12.3")
     implementation("org.clojure:data.json:2.4.0")
     implementation("camel-snake-kebab:camel-snake-kebab:0.4.2")
-    implementation("jargon:chime:0.3.2")
     implementation("etaoin:etaoin:0.4.1")
 
     implementation(platform("org.http4k:http4k-bom:4.7.0.0"))
