@@ -16,8 +16,10 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.NativeKeyEvent
 import androidx.compose.ui.input.key.onKeyEvent
+import androidx.compose.ui.input.key.type
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.*
 import gh.marad.cmdwindow.app.data.CommandName
@@ -140,15 +142,15 @@ object Gui {
                             TextField(
                                 modifier = Modifier.fillMaxWidth().focusRequester(focusRequester)
                                     .onKeyEvent {
-                                        when (it.nativeKeyEvent.keyCode) {
-                                            NativeKeyEvent.VK_ENTER -> {
+                                        when {
+                                            it.type == KeyEventType.KeyDown && it.nativeKeyEvent.keyCode == NativeKeyEvent.VK_ENTER -> {
                                                 isOpen = false
                                                 startInThread {
                                                     optionItems.firstOrNull()?.handler?.invoke()
                                                 }
                                                 true
                                             }
-                                            NativeKeyEvent.VK_ESCAPE -> {
+                                            it.type == KeyEventType.KeyDown && it.nativeKeyEvent.keyCode == NativeKeyEvent.VK_ESCAPE -> {
                                                 isOpen = false
                                                 true
                                             }
@@ -211,15 +213,15 @@ object Gui {
                 .focusRequester(focusRequester)
                 .border(width = 2.dp, color = MaterialTheme.colors.primary)
                 .onKeyEvent { key ->
-                    when(key.nativeKeyEvent.keyCode) {
-                        NativeKeyEvent.VK_ENTER -> {
+                    when {
+                        key.type == KeyEventType.KeyDown && key.nativeKeyEvent.keyCode == NativeKeyEvent.VK_ENTER -> {
                             if (onEnter != null) {
                                 onEnter(text)
                             }
                             text = ""
                             true
                         }
-                        NativeKeyEvent.VK_ESCAPE -> {
+                        key.type == KeyEventType.KeyDown && key.nativeKeyEvent.keyCode == NativeKeyEvent.VK_ESCAPE -> {
                             if (onEscape != null) {
                                 onEscape()
                             }
