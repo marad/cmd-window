@@ -1,27 +1,24 @@
 package gh.marad.cmdwindow
 
+import androidx.compose.ui.window.application
 import gh.marad.cmdwindow.app.domain.*
 import gh.marad.cmdwindow.commands.createExitCommand
 import gh.marad.cmdwindow.commands.createHelpCommand
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 
 object App {
     private val commandRegistry = Commands.createCommandRegistry()
     private val ahk = Ahk()
     private val scriptApi = ScriptApi(commandRegistry, ahk)
 
-    fun start() {
-        runBlocking {
-            launch { createDefaultCommands().map(scriptApi::registerCommand) }
-            launch {
-                Gui.start(scriptApi::invokeCommand)
-                setupScriptingWithKotlin()
-                Windows.registerGlobalHotkeyAndStartWinApiThread {
-                    Gui.MainWindow.toggleVisibility()
-                }
+    fun start() = application {
+        createDefaultCommands().map(scriptApi::registerCommand)
+        Gui.start(scriptApi::invokeCommand, ::exitApplication)
+        Thread { setupScriptingWithKotlin() }.start()
+        Thread {
+            Windows.registerGlobalHotkeyAndStartWinApiThread {
+                Gui.toggleMainWindow()
             }
-        }
+        }.start()
     }
 
     private fun setupScriptingWithKotlin() {

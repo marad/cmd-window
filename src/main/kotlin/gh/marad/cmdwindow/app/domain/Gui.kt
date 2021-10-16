@@ -1,8 +1,5 @@
 package gh.marad.cmdwindow.app.domain
 
-import androidx.compose.desktop.AppManager
-import androidx.compose.desktop.AppWindow
-import androidx.compose.desktop.Window
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -15,169 +12,222 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.drawscope.DrawScope
+import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.input.key.NativeKeyEvent
 import androidx.compose.ui.input.key.onKeyEvent
-import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.v1.MenuItem
-import androidx.compose.ui.window.v1.Tray
+import androidx.compose.ui.window.*
 import gh.marad.cmdwindow.app.data.CommandName
-import java.awt.image.BufferedImage
-import java.util.*
-import javax.swing.SwingUtilities
-import kotlin.concurrent.schedule
 
 
 object Gui {
-    private val promptWindowSize = IntSize(400, 100)
-
     const val mainWindowTitle = "Command Window"
+    private val promptWindowSize = WindowSize(400.dp, 100.dp)
+    private lateinit var closeAppCallback: () -> Unit
 
-    fun start(invokeCommand: (CommandName) -> Unit) {
-        Window(
-            centered = true,
-            undecorated = true,
-            title = mainWindowTitle,
-            size = promptWindowSize
-        ) {
-            TrayIcon.setup()
-            layout {
-                userInputField(
-                    placeholder = "Start typing...",
-                    onEnter = { commandName ->
-                        MainWindow.hide()
-                        startInThread {
-                            invokeCommand(commandName)
-                        }
-                    },
-                    onEscape = {
-                        MainWindow.hide()
-                    },
-                    shouldCloseAfterOnEnter = false,
-                )
-            }
-        }
+    // main window
+    private val promptWindowOpen = mutableStateOf(false)
 
-        SwingUtilities.invokeLater {
-            MainWindow.hide()
-        }
+    // message window
+    private val messageWindowOpen = mutableStateOf(false)
+    private val messageWindowTitle = mutableStateOf("")
+    private val messageWindowMessage = mutableStateOf("")
+    private val messageWindowSize = mutableStateOf(WindowSize(300.dp, 200.dp))
+
+    // input window
+    private val inputWindowOpen = mutableStateOf(false)
+    private val inputWindowPrompt: MutableState<String?> = mutableStateOf(null)
+    private val inputWindowCallback: MutableState<(String) -> Unit> = mutableStateOf({})
+
+    fun toggleMainWindow() { promptWindowOpen.value = !promptWindowOpen.value }
+    fun exitApplication() = closeAppCallback()
+
+    @Composable
+    fun start(invokeCommand: (CommandName) -> Unit, exitAppCallback: () -> Unit) {
+        this.closeAppCallback = exitAppCallback
+        TrayIcon.setup()
+        definePromptWindow(invokeCommand)
+        defineMessageWindow()
+        defineInputWindow()
     }
 
     @Composable
-    fun layout(content: @Composable () -> Unit) {
-        MaterialTheme(
-            colors = darkThemeColors
-        ) {
-            Surface(
-                border = BorderStroke(
-                    width = 2.dp,
-                    color = MaterialTheme.colors.primary
-                )
+    fun definePromptWindow(invokeCommand: (CommandName) -> Unit) {
+        var isOpen by remember { promptWindowOpen }
+        if (isOpen) {
+            Window(
+                onCloseRequest = { isOpen = false },
+                icon = AppIcon,
+                state = rememberWindowState(
+                    position = WindowPosition.Aligned(Alignment.Center),
+                    size = promptWindowSize
+                ),
+                title = mainWindowTitle,
+                undecorated = true,
+                alwaysOnTop = true,
+                resizable = false,
             ) {
-                Box(
-                    modifier = Modifier.fillMaxSize().padding(16.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    content()
+                layout {
+                    userInputField(
+                        placeholder = "Start typing...",
+                        onEnter = { commandName ->
+                            isOpen = false
+                            startInThread {
+                                invokeCommand(commandName)
+                            }
+                        },
+                        onEscape = {
+                            isOpen = false
+                        },
+                    )
                 }
             }
         }
     }
 
-    fun message(message: String, title: String, width: Int = 300, height: Int = 100) {
-        Window(
-            title = title,
-            size = IntSize(width, height)
-        ) {
-            layout { Text(message) }
+    @Composable
+    fun defineMessageWindow() {
+        var isOpen by remember { messageWindowOpen }
+        val title by remember { messageWindowTitle }
+        val windowSize by remember { messageWindowSize }
+        val message by remember { messageWindowMessage }
+
+        if (isOpen) {
+            Window(
+                onCloseRequest = { isOpen = false },
+                icon = AppIcon,
+                title = title,
+                state = rememberWindowState(size = windowSize, position = WindowPosition.Aligned(Alignment.Center))
+            ) {
+                layout { Text(message) }
+            }
+        }
+    }
+
+    fun message(title: String, message: String, width: Int, height: Int) {
+        messageWindowTitle.value = title
+        messageWindowMessage.value = message
+        messageWindowSize.value = WindowSize(width.dp, height.dp)
+        messageWindowOpen.value = true
+    }
+
+    @Composable
+    fun defineInputWindow() {
+        var isOpen by remember { inputWindowOpen }
+        val prompt by remember { inputWindowPrompt }
+        val callback by remember { inputWindowCallback }
+
+
+        if (isOpen) {
+            Window(
+                onCloseRequest = { isOpen = false },
+                icon = AppIcon,
+                undecorated = true,
+                state = rememberWindowState(
+                    size = promptWindowSize,
+                    position = WindowPosition.Aligned(Alignment.Center)
+                )
+            ) {
+                layout {
+                    userInputField(
+                        placeholder = prompt,
+                        onEnter = {
+                            isOpen = false
+                            callback(it)
+                        },
+                        onEscape = {
+                            isOpen = false
+                        }
+                    )
+                }
+            }
         }
     }
 
     fun input(prompt: String?, onResponse: (String) -> Unit) {
-        Window(
-            centered = true,
-            undecorated = true,
-            size = promptWindowSize
-        ) {
-            layout {
-                userInputField(
-                    placeholder = prompt,
-                    onEnter = onResponse
-                )
-            }
-        }
+        inputWindowPrompt.value = prompt
+        inputWindowCallback.value = onResponse
+        inputWindowOpen.value = true
     }
 
     fun select(options: List<SelectOption>,
                title: String? = null,
                showFilter: Boolean = false,
-    ) {
-        Window(
-            title = title ?: "",
-            centered = true,
-            undecorated = false,
-            size = IntSize(promptWindowSize.width, 650)
-        ) {
-            var filterText by remember { mutableStateOf("") }
-            val focusRequester = FocusRequester()
-            val optionItems = options.filter {
-                filterText.isBlank() ||
-                        it.name.contains(filterText, ignoreCase = true) ||
-                        it.description?.contains(filterText, ignoreCase = true) ?: false
-            }
-            layout {
-                Column {
-                    if (showFilter) {
-                        TextField(
-                            modifier = Modifier.fillMaxWidth().focusRequester(focusRequester)
-                                .onKeyEvent {
-                                    when(it.nativeKeyEvent.keyCode) {
-                                        NativeKeyEvent.VK_ENTER -> {
-                                            AppManager.focusedWindow?.close()
-                                            startInThread {
-                                                optionItems.firstOrNull()?.handler?.invoke()
+    ) = application {
+        var isOpen by remember { mutableStateOf(true) }
+        if (isOpen) {
+            Window(
+                onCloseRequest = ::exitApplication,
+                title = title ?: "",
+                undecorated = false,
+                state = rememberWindowState(
+                    size = WindowSize(promptWindowSize.width, 650.dp),
+                    position = WindowPosition.Aligned(Alignment.Center)
+                ),
+            ) {
+                var filterText by remember { mutableStateOf("") }
+                val focusRequester = FocusRequester()
+                val optionItems = options.filter {
+                    filterText.isBlank() ||
+                            it.name.contains(filterText, ignoreCase = true) ||
+                            it.description?.contains(filterText, ignoreCase = true) ?: false
+                }
+                layout {
+                    Column {
+                        if (showFilter) {
+                            TextField(
+                                modifier = Modifier.fillMaxWidth().focusRequester(focusRequester)
+                                    .onKeyEvent {
+                                        when (it.nativeKeyEvent.keyCode) {
+                                            NativeKeyEvent.VK_ENTER -> {
+                                                isOpen = false
+                                                startInThread {
+                                                    optionItems.firstOrNull()?.handler?.invoke()
+                                                }
+                                                true
                                             }
-                                            true
+                                            NativeKeyEvent.VK_ESCAPE -> {
+                                                isOpen = false
+                                                true
+                                            }
+                                            else -> false
                                         }
-                                        NativeKeyEvent.VK_ESCAPE -> {
-                                            AppManager.focusedWindow?.close()
-                                            true
-                                        }
-                                        else -> false
-                                    }
-                                    false
-                                },
-                            value = filterText,
-                            onValueChange = { filterText = it },
-                            singleLine = true,
-                        )
+                                        false // TODO: wyczaić o co tu chodzi z tymi nieużywanymi
+                                    },
+                                value = filterText,
+                                onValueChange = { filterText = it },
+                                singleLine = true,
+                            )
 
-                        DisposableEffect(Unit) {
-                            focusRequester.requestFocus()
-                            onDispose { }
+                            DisposableEffect(Unit) {
+                                focusRequester.requestFocus()
+                                onDispose { }
+                            }
                         }
-                    }
-                    Column(
-                        modifier = Modifier.fillMaxHeight()
-                    ) {
-                        LazyColumn {
-                            items(optionItems) { option ->
-                                Card(
-                                    modifier = Modifier.fillMaxWidth().padding(5.dp)
-                                        .clickable {
-                                            AppManager.focusedWindow?.close()
-                                            option.handler()
-                                        },
-                                    elevation = 4.dp
-                                ) {
-                                    Column(
-                                        modifier = Modifier.fillMaxWidth()
-                                            .padding(8.dp)
+                        Column(
+                            modifier = Modifier.fillMaxHeight()
+                        ) {
+                            LazyColumn {
+                                items(optionItems) { option ->
+                                    Card(
+                                        modifier = Modifier.fillMaxWidth().padding(5.dp)
+                                            .clickable {
+                                                isOpen = false
+                                                option.handler()
+                                            },
+                                        elevation = 4.dp
                                     ) {
-                                        Text(option.name, style = MaterialTheme.typography.h6)
-                                        if (option.description != null) {
-                                            Text(option.description, style = MaterialTheme.typography.subtitle1)
+                                        Column(
+                                            modifier = Modifier.fillMaxWidth()
+                                                .padding(8.dp)
+                                        ) {
+                                            Text(option.name, style = MaterialTheme.typography.h6)
+                                            if (option.description != null) {
+                                                Text(option.description, style = MaterialTheme.typography.subtitle1)
+                                            }
                                         }
                                     }
                                 }
@@ -189,16 +239,12 @@ object Gui {
         }
     }
 
-
     @Composable
     fun userInputField(
-        onEscape: (() -> Unit)? = {
-            AppManager.focusedWindow?.close()
-        },
+        onEscape: (() -> Unit)? = null,
         onEnter: ((String) -> Unit)? = null,
         label: String? = null,
         placeholder: String? = null,
-        shouldCloseAfterOnEnter: Boolean = true,
     ) {
         var text by remember { mutableStateOf("") }
         val focusRequester = FocusRequester()
@@ -209,9 +255,6 @@ object Gui {
                 .onKeyEvent { key ->
                     when(key.nativeKeyEvent.keyCode) {
                         NativeKeyEvent.VK_ENTER -> {
-                            if (shouldCloseAfterOnEnter) {
-                                AppManager.focusedWindow?.close()
-                            }
                             if (onEnter != null) {
                                 onEnter(text)
                             }
@@ -248,14 +291,40 @@ object Gui {
         }
     }
 
+
+    @Composable
+    fun layout(content: @Composable () -> Unit) {
+        MaterialTheme(
+            colors = darkThemeColors
+        ) {
+            Surface(
+                border = BorderStroke(
+                    width = 2.dp,
+                    color = MaterialTheme.colors.primary
+                )
+            ) {
+                Box(
+                    modifier = Modifier.fillMaxSize().padding(16.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    content()
+                }
+            }
+        }
+    }
+
     private fun startInThread(handler: () -> Unit) {
         Thread {
             try {
                 handler()
             } catch(ex: Throwable) {
-                message(
-                    ex.message!!,
-                    title = "Exception")
+                TrayIcon.trayState.sendNotification(
+                    Notification(
+                        "Exception",
+                        "${ex.message}",
+                        Notification.Type.Error
+                    )
+                )
             }
         }.start()
     }
@@ -290,75 +359,33 @@ object Gui {
         onError = Color.DarkGray
     )
 
-    object MainWindow {
-        fun getMainWindow(): AppWindow? =
-            AppManager.windows.find { it.title == Gui.mainWindowTitle } as AppWindow?
+    object AppIcon : Painter() {
+        override val intrinsicSize = Size(256f, 256f)
 
-        fun toggleVisibility() {
-            val frame = getMainWindow()
-            if (frame != null) {
-                frame.window.isVisible = !frame.window.isVisible
-                center(frame)
-            }
-        }
-
-        fun show() {
-            val frame = getMainWindow()
-            if (frame != null) {
-                frame.window.isVisible = true
-                center(frame)
-            }
-        }
-
-        fun hide() {
-            val frame = getMainWindow()
-            if (frame != null) {
-                frame.window.isVisible = false
-                center(frame)
-            }
-        }
-
-        private fun center(frame: AppWindow) {
-            Timer("Center Window", false).schedule(20) {
-                frame.setWindowCentered()
-            }
+        override fun DrawScope.onDraw() {
+            drawOval(Color.Green)
         }
     }
 
     object TrayIcon {
+        lateinit var trayState: TrayState
         @Composable
         fun setup() {
-            DisposableEffect(Unit) {
-                val tray = Tray().apply {
-                    icon(getTrayIcon())
-                    trayContextMenu()
+            trayState = rememberTrayState()
+            Tray(
+                state = trayState,
+                icon = AppIcon,
+                menu = {
+                    Item(
+                        "Toggle window",
+                        onClick = { toggleMainWindow() }
+                    )
+                    Item(
+                        "Close",
+                        onClick = { exitApplication() }
+                    )
                 }
-                onDispose {
-                    tray.remove()
-                }
-            }
-        }
-
-        fun Tray.trayContextMenu() {
-            menu(
-                MenuItem(
-                    name = "Toggle window",
-                    onClick = { MainWindow.toggleVisibility() }
-                ),
-                MenuItem("Close", {
-                    AppManager.exit()
-                })
             )
-        }
-
-        fun getTrayIcon(): BufferedImage {
-            val size = 256;
-            val image = BufferedImage(size, size, BufferedImage.TYPE_INT_ARGB)
-            val graphics = image.createGraphics()
-            graphics.color = java.awt.Color.green
-            graphics.fillOval(0, 0, size, size)
-            graphics.dispose()
-            return image
         }
     }
 }

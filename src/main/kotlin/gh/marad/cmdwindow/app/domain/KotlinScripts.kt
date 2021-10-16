@@ -28,8 +28,9 @@ object KotlinScripts {
             scriptEngine.eval(Files.newBufferedReader(scriptsPath.resolve("Bootstrap.kts")))
         } catch (ex: Throwable) {
             ex.printStackTrace()
-            Gui.message("Error while loading Kotlin scripts: ${ex.message}",
+            Gui.message(
                 title = "Kotlin Scripts Error",
+                message = "Error while loading Kotlin scripts: ${ex.message}",
                 width = 500,
                 height = 300)
         }
