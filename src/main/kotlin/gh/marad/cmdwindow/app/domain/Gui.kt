@@ -154,7 +154,6 @@ object Gui {
                                             }
                                             else -> false
                                         }
-                                        false // TODO: wyczaić o co tu chodzi z tymi nieużywanymi
                                     },
                                 value = filterText,
                                 onValueChange = { filterText = it },
