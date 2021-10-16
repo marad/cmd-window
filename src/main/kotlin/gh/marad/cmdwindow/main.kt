@@ -1,27 +1,31 @@
 package gh.marad.cmdwindow
 
-import androidx.compose.ui.window.application
 import gh.marad.cmdwindow.app.domain.*
 import gh.marad.cmdwindow.commands.createExitCommand
 import gh.marad.cmdwindow.commands.createHelpCommand
+import kotlinx.coroutines.*
+import java.util.concurrent.*
 
 object App {
     private val commandRegistry = Commands.createCommandRegistry()
     private val ahk = Ahk()
     private val scriptApi = ScriptApi(commandRegistry, ahk)
 
-    fun start() = application {
-        createDefaultCommands().map(scriptApi::registerCommand)
-        Gui.start(scriptApi::invokeCommand, ::exitApplication)
-        Thread { setupScriptingWithKotlin() }.start()
-        Thread {
+    private val executor = ThreadPoolExecutor(4, 4, 100, TimeUnit.SECONDS, ArrayBlockingQueue(4))
+
+    fun start() = runBlocking(executor.asCoroutineDispatcher()) {
+        launch { createDefaultCommands().map(scriptApi::registerCommand) }
+        launch { Gui.start(scriptApi::invokeCommand) }
+        launch { setupScriptingWithKotlin() }
+        launch {
             Windows.registerGlobalHotkeyAndStartWinApiThread {
                 Gui.toggleMainWindow()
             }
-        }.start()
+        }
     }
 
     private fun setupScriptingWithKotlin() {
+        println("Starting scripting engine...")
         KotlinScripts.initScriptingEngine(scriptApi)
 
         scriptApi.registerCommand("r", "Reloads all scripts") {
@@ -31,8 +35,8 @@ object App {
     }
 
     private fun createDefaultCommands(): List<Commands.Cmd> = listOf(
-        createHelpCommand(scriptApi::listCommands),
-        createExitCommand()
+        createHelpCommand(scriptApi::listCommands, scriptApi::invokeCommand),
+        createExitCommand(),
     )
 }
 

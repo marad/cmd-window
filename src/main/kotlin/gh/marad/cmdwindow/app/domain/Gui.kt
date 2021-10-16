@@ -31,32 +31,18 @@ object Gui {
     // main window
     private val promptWindowOpen = mutableStateOf(false)
 
-    // message window
-    private val messageWindowOpen = mutableStateOf(false)
-    private val messageWindowTitle = mutableStateOf("")
-    private val messageWindowMessage = mutableStateOf("")
-    private val messageWindowSize = mutableStateOf(WindowSize(300.dp, 200.dp))
-
-    // input window
-    private val inputWindowOpen = mutableStateOf(false)
-    private val inputWindowPrompt: MutableState<String?> = mutableStateOf(null)
-    private val inputWindowCallback: MutableState<(String) -> Unit> = mutableStateOf({})
-
     fun toggleMainWindow() { promptWindowOpen.value = !promptWindowOpen.value }
     fun exitApplication() = closeAppCallback()
 
-    @Composable
-    fun start(invokeCommand: (CommandName) -> Unit, exitAppCallback: () -> Unit) {
-        this.closeAppCallback = exitAppCallback
+    fun start(invokeCommand: (CommandName) -> Unit) = application {
+        closeAppCallback = ::exitApplication
         TrayIcon.setup()
         definePromptWindow(invokeCommand)
-        defineMessageWindow()
-        defineInputWindow()
     }
 
     @Composable
-    fun definePromptWindow(invokeCommand: (CommandName) -> Unit) {
-        var isOpen by remember { promptWindowOpen }
+    private fun definePromptWindow(invokeCommand: (CommandName) -> Unit) {
+        var isOpen by remember { promptWindowOpen}
         if (isOpen) {
             Window(
                 onCloseRequest = { isOpen = false },
@@ -88,69 +74,42 @@ object Gui {
         }
     }
 
-    @Composable
-    fun defineMessageWindow() {
-        var isOpen by remember { messageWindowOpen }
-        val title by remember { messageWindowTitle }
-        val windowSize by remember { messageWindowSize }
-        val message by remember { messageWindowMessage }
-
-        if (isOpen) {
-            Window(
-                onCloseRequest = { isOpen = false },
-                icon = AppIcon,
-                title = title,
-                state = rememberWindowState(size = windowSize, position = WindowPosition.Aligned(Alignment.Center))
-            ) {
-                layout { Text(message) }
-            }
+    fun message(title: String, message: String, width: Int, height: Int) = application {
+        Window(
+            onCloseRequest = ::exitApplication,
+            icon = AppIcon,
+            title = title,
+            state = rememberWindowState(size = WindowSize(width.dp, height.dp), position = WindowPosition.Aligned(Alignment.Center))
+        ) {
+            layout { Text(message) }
         }
     }
 
-    fun message(title: String, message: String, width: Int, height: Int) {
-        messageWindowTitle.value = title
-        messageWindowMessage.value = message
-        messageWindowSize.value = WindowSize(width.dp, height.dp)
-        messageWindowOpen.value = true
-    }
-
-    @Composable
-    fun defineInputWindow() {
-        var isOpen by remember { inputWindowOpen }
-        val prompt by remember { inputWindowPrompt }
-        val callback by remember { inputWindowCallback }
-
-
-        if (isOpen) {
-            Window(
-                onCloseRequest = { isOpen = false },
-                icon = AppIcon,
-                undecorated = true,
-                state = rememberWindowState(
-                    size = promptWindowSize,
-                    position = WindowPosition.Aligned(Alignment.Center)
-                )
-            ) {
-                layout {
-                    userInputField(
-                        placeholder = prompt,
-                        onEnter = {
-                            isOpen = false
-                            callback(it)
-                        },
-                        onEscape = {
-                            isOpen = false
+    fun input(prompt: String?, onResponse: (String) -> Unit) = application {
+        Window(
+            onCloseRequest = ::exitApplication,
+            icon = AppIcon,
+            undecorated = true,
+            state = rememberWindowState(
+                size = promptWindowSize,
+                position = WindowPosition.Aligned(Alignment.Center)
+            )
+        ) {
+            layout {
+                userInputField(
+                    placeholder = prompt,
+                    onEnter = {
+                        exitApplication()
+                        startInThread {
+                            onResponse(it)
                         }
-                    )
-                }
+                    },
+                    onEscape = {
+                        exitApplication()
+                    }
+                )
             }
         }
-    }
-
-    fun input(prompt: String?, onResponse: (String) -> Unit) {
-        inputWindowPrompt.value = prompt
-        inputWindowCallback.value = onResponse
-        inputWindowOpen.value = true
     }
 
     fun select(options: List<SelectOption>,
@@ -313,7 +272,7 @@ object Gui {
         }
     }
 
-    private fun startInThread(handler: () -> Unit) {
+    fun startInThread(handler: () -> Unit) {
         Thread {
             try {
                 handler()
