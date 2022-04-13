@@ -7,6 +7,7 @@ import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import java.util.concurrent.ArrayBlockingQueue
+import java.util.concurrent.ThreadFactory
 import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.TimeUnit
 
@@ -18,6 +19,7 @@ object App {
     private val executor = ThreadPoolExecutor(4, 4, 100, TimeUnit.SECONDS, ArrayBlockingQueue(4))
 
     fun start() = runBlocking(executor.asCoroutineDispatcher()) {
+        executor.threadFactory = ThreadFactory { Thread(it).apply { isDaemon = true } }
         launch { createDefaultCommands().map(scriptApi::registerCommand) }
         launch { Gui.start(scriptApi::invokeCommand) }
         launch { setupScriptingWithKotlin() }

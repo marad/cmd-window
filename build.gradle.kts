@@ -1,10 +1,8 @@
-import org.jetbrains.compose.compose
-import org.jetbrains.compose.desktop.application.dsl.TargetFormat
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
     kotlin("jvm") version "1.5.31"
-    id("org.jetbrains.compose") version "1.0.0-alpha4-build398"
+    id("org.openjfx.javafxplugin") version "0.0.12"
 }
 
 group = "gh.marad"
@@ -13,12 +11,15 @@ version = "1.0.2"
 repositories {
     jcenter()
     mavenCentral()
-    maven { url = uri("https://maven.pkg.jetbrains.space/public/p/compose/dev") }
     maven { url = uri("https://repo.clojars.org") }
     google()
 }
 
 dependencies {
+    implementation("com.dustinredmond.fxtrayicon:FXTrayIcon:3.1.2")
+    implementation("com.jfoenix:jfoenix:9.0.10")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.6.1")
+
     runtimeOnly("org.jetbrains.kotlin:kotlin-scripting-jsr223:1.5.21")
     testRuntimeOnly("org.jetbrains.kotlin:kotlin-scripting-jsr223:1.5.21")
     implementation("org.seleniumhq.selenium:selenium-java:3.141.59")
@@ -37,7 +38,6 @@ dependencies {
     implementation("org.http4k:http4k-server-netty:4.14.0.0")
     implementation("org.http4k:http4k-client-apache:4.14.0.0")
 
-    implementation(compose.desktop.currentOs)
     implementation("net.java.dev.jna:jna:5.9.0")
     implementation("net.java.dev.jna:jna-platform:5.9.0")
 
@@ -57,16 +57,6 @@ tasks.withType<KotlinCompile>() {
 
 tasks.withType<Test> {
     useJUnitPlatform()
-}
-
-compose.desktop {
-    application {
-        mainClass = "gh.marad.cmdwindow.MainKt"
-        nativeDistributions {
-            targetFormats(TargetFormat.Dmg, TargetFormat.Exe, TargetFormat.Deb)
-            packageName = "cmd-window"
-        }
-    }
 }
 
 tasks.register<Copy>("copyUberJar") {
@@ -91,4 +81,8 @@ tasks.register<Copy>("installDist") {
     dependsOn("makeDist")
     from("$buildDir/dist")
     into("C:\\apps\\cmd-window")
+}
+
+javafx {
+    modules("javafx.controls")
 }

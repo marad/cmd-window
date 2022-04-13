@@ -1,6 +1,5 @@
 package gh.marad.cmdwindow
 
-import androidx.compose.ui.window.Notification
 import gh.marad.cmdwindow.app.data.CommandHandler
 import gh.marad.cmdwindow.app.data.CommandRegistry
 import gh.marad.cmdwindow.app.domain.*
@@ -29,10 +28,10 @@ class ScriptApi(private val commandRegistry: CommandRegistry,
     fun ahkSetVar(name: String, value: String) = ahk.setVar(name, value)
     fun ahkGetVar(name: String) = ahk.getVar(name)
 
-    fun guiMessage(title: String, msg: String, width: Int = 300, height: Int = 200) = Gui.message(msg, title, width, height)
+    fun guiMessage(title: String, msg: String, width: Int = 500, height: Int = 300) = Gui.message(msg, title, width, height)
     fun guiInput(prompt: String?, onResponse: (String) -> Unit) = Gui.input(prompt, onResponse)
     fun guiSelect(options: List<SelectOption>, title: String? = null, showFilter: Boolean = false) = Gui.select(options, title, showFilter)
-    fun guiNotify(title: String, message: String) = Gui.sendNotification(Notification(title, message, Notification.Type.None))
-    fun guiWarn(title: String, message: String) = Gui.sendNotification(Notification(title, message, Notification.Type.Warning))
-    fun guiError(title: String, message: String) = Gui.sendNotification(Notification(title, message, Notification.Type.Error))
+    fun guiNotify(title: String, message: String) = Gui.sendNotification(message, title, NotificationType.NONE)
+    fun guiWarn(title: String, message: String) = Gui.sendNotification(message, title, NotificationType.WARN)
+    fun guiError(title: String, message: String) = Gui.sendNotification(message, title, NotificationType.ERROR)
 }

@@ -4,6 +4,7 @@ import gh.marad.cmdwindow.app.data.CommandName
 import gh.marad.cmdwindow.app.domain.Commands
 import gh.marad.cmdwindow.app.domain.Gui
 import gh.marad.cmdwindow.app.domain.SelectOption
+import javafx.application.Platform
 import kotlin.system.exitProcess
 
 fun createHelpCommand(listCommands: () -> List<Commands.Cmd>,
@@ -27,4 +28,7 @@ fun createHelpCommand(listCommands: () -> List<Commands.Cmd>,
 fun createExitCommand() = Commands.Cmd(
     name = "exit",
     description = "closes the program",
-    handler = { exitProcess(0) })
+    handler = {
+        Platform.exit()
+        Platform.runLater { exitProcess(0) }
+    })
