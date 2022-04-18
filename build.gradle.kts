@@ -16,6 +16,9 @@ repositories {
 }
 
 dependencies {
+    implementation("org.graalvm.js:js:22.0.0.2")
+
+
     implementation("com.dustinredmond.fxtrayicon:FXTrayIcon:3.1.2")
     implementation("com.jfoenix:jfoenix:9.0.10")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.6.1")

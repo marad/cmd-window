@@ -22,7 +22,8 @@ object App {
         executor.threadFactory = ThreadFactory { Thread(it).apply { isDaemon = true } }
         launch { createDefaultCommands().map(scriptApi::registerCommand) }
         launch { Gui.start(scriptApi::invokeCommand) }
-        launch { setupScriptingWithKotlin() }
+//        launch { setupScriptingWithKotlin() }
+        launch { JsScripts.initScriptingEngine(scriptApi) }
         launch {
             Windows.registerGlobalHotkeyAndStartWinApiThread {
                 Gui.toggleMainWindow()
