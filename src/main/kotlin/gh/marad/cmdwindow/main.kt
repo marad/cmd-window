@@ -22,7 +22,7 @@ object App {
         executor.threadFactory = ThreadFactory { Thread(it).apply { isDaemon = true } }
         launch { createDefaultCommands().map(scriptApi::registerCommand) }
         launch { Gui.start(scriptApi::invokeCommand) }
-//        launch { setupScriptingWithKotlin() }
+        launch { setupScriptingWithKotlin() }
         launch { JsScripts.initScriptingEngine(scriptApi) }
         launch {
             Windows.registerGlobalHotkeyAndStartWinApiThread {
@@ -35,9 +35,9 @@ object App {
         println("Starting scripting engine...")
         KotlinScripts.initScriptingEngine(scriptApi)
 
-        scriptApi.registerCommand("r", "Reloads all scripts") {
+        scriptApi.registerCommand("rk", "Reloads kotlin scripts") {
             KotlinScripts.reload(scriptApi)
-            scriptApi.guiNotify("", "Scripts reloaded!")
+            scriptApi.guiNotify("", "Kotlin scripts reloaded!")
         }
     }
 

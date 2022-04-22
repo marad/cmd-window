@@ -20,8 +20,9 @@ class JsScripts(private val scriptApi: ScriptApi) {
         }
     }
     init {
-        scriptApi.registerCommand("r", "reloads scripts") {
+        scriptApi.registerCommand("rj", "reloads js scripts") {
             reload()
+            scriptApi.guiNotify("", "JS scripts reloaded!")
         }
         reload()
     }

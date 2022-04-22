@@ -1,12 +1,19 @@
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
 
 plugins {
-    kotlin("jvm") version "1.5.31"
+    kotlin("jvm") version "1.6.20"
     id("org.openjfx.javafxplugin") version "0.0.12"
+    id("com.github.johnrengelman.shadow") version "7.1.2"
+    application
 }
 
 group = "gh.marad"
 version = "1.0.2"
+
+application {
+    mainClass.set("gh.marad.cmdwindow.MainKt")
+}
 
 repositories {
     jcenter()
@@ -17,7 +24,6 @@ repositories {
 
 dependencies {
     implementation("org.graalvm.js:js:22.0.0.2")
-
 
     implementation("com.dustinredmond.fxtrayicon:FXTrayIcon:3.1.2")
     implementation("com.jfoenix:jfoenix:9.0.10")
@@ -55,7 +61,7 @@ dependencies {
 }
 
 tasks.withType<KotlinCompile>() {
-    kotlinOptions.jvmTarget = "11"
+    kotlinOptions.jvmTarget = "14"
 }
 
 tasks.withType<Test> {
@@ -63,10 +69,10 @@ tasks.withType<Test> {
 }
 
 tasks.register<Copy>("copyUberJar") {
-    dependsOn("packageUberJarForCurrentOS")
-    from("$buildDir/compose/jars/")
-    include("*.jar")
-    rename("cmd-window.*\\.jar", "cmd-window.jar")
+    dependsOn("shadowJar")
+    from("$buildDir/libs/")
+    include("*-all.jar")
+    rename("cmd-window-$version-all\\.jar", "cmd-window.jar")
     into("$buildDir/dist")
 }
 
@@ -80,7 +86,7 @@ tasks.register("makeDist") {
     dependsOn("copyAhkDll")
 }
 
-tasks.register<Copy>("installDist") {
+tasks.register<Copy>("installLocalDist") {
     dependsOn("makeDist")
     from("$buildDir/dist")
     into("C:\\apps\\cmd-window")
@@ -88,4 +94,10 @@ tasks.register<Copy>("installDist") {
 
 javafx {
     modules("javafx.controls")
+}
+
+tasks {
+    "shadowJar"(ShadowJar::class) {
+        isZip64 = true
+    }
 }
